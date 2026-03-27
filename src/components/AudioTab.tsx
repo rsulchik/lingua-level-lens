@@ -10,10 +10,15 @@ import { Loader2, Mic, MicOff, Upload } from "lucide-react";
 interface AudioResult {
   transcription: string;
   detectedLanguage: string;
+  isTurkmen: boolean;
   isEnglish: boolean;
-  cefrLevel: string | null;
+  proficiencyLevel: string | null;
+  proficiencyLabel: string | null;
   confidence: number;
   analysis: string;
+  grammarNotes?: string;
+  vocabularyNotes?: string;
+  pronunciationNotes?: string;
   suggestions: string[];
 }
 
@@ -110,6 +115,10 @@ export function AudioTab() {
   };
 
   const levelColors: Record<string, string> = {
+    "Başlangyç": "bg-cefr-a1",
+    "Orta": "bg-cefr-b1",
+    "Ösen": "bg-cefr-c1",
+    "Ussatlyk": "bg-cefr-c2",
     A1: "bg-cefr-a1", A2: "bg-cefr-a2", B1: "bg-cefr-b1",
     B2: "bg-cefr-b2", C1: "bg-cefr-c1", C2: "bg-cefr-c2",
   };
@@ -118,7 +127,7 @@ export function AudioTab() {
     <div className="space-y-6">
       <Card className="p-6 border-border/50 shadow-sm">
         <p className="text-sm text-muted-foreground mb-4">
-          Ses ýazgysyny ýazdyryň ýa-da ses faýlyny ýükläň. AI tekste öwrüp, dil derejesini kesgitlär.
+          Türkmen ýa-da iňlis dilinde ses ýazgysyny ýazdyryň. AI sesiňizi tanap, dil derejesini kesgitlär.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3">
@@ -183,61 +192,107 @@ export function AudioTab() {
         )}
       </Card>
 
-      {result && (
-        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <Card className="p-6 border-border/50">
-            <h3 className="font-heading font-semibold text-foreground mb-3 flex items-center gap-2">
-              <span className="text-lg">🎤</span> Transkripsion
-            </h3>
-            <p className="text-foreground leading-relaxed bg-muted p-4 rounded-lg">
-              {result.transcription}
-            </p>
-            <div className="flex gap-2 mt-3">
-              <Badge variant="secondary">{result.detectedLanguage}</Badge>
-            </div>
-          </Card>
+      {result && <AudioResultDisplay result={result} levelColors={levelColors} />}
+    </div>
+  );
+}
 
-          {result.cefrLevel && (
-            <Card className="p-6 border-border/50 text-center">
-              <p className="text-sm text-muted-foreground mb-2">CEFR Derejesi</p>
-              <span className={`${levelColors[result.cefrLevel] || "bg-primary"} text-primary-foreground text-3xl font-heading font-bold px-5 py-2 rounded-xl inline-block`}>
-                {result.cefrLevel}
-              </span>
-              {result.confidence > 0 && (
-                <div className="mt-4 max-w-xs mx-auto">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-muted-foreground">Ynam</span>
-                    <span className="font-heading font-bold text-primary">{Math.round(result.confidence * 100)}%</span>
-                  </div>
-                  <Progress value={result.confidence * 100} className="h-2" />
-                </div>
-              )}
-            </Card>
+function AudioResultDisplay({ result, levelColors }: { result: AudioResult; levelColors: Record<string, string> }) {
+  return (
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Transcription */}
+      <Card className="p-6 border-border/50">
+        <h3 className="font-heading font-semibold text-foreground mb-3 flex items-center gap-2">
+          <span className="text-lg">🎤</span> Transkripsion
+        </h3>
+        <p className="text-foreground leading-relaxed bg-muted p-4 rounded-lg">
+          {result.transcription}
+        </p>
+        <div className="flex gap-2 mt-3">
+          <Badge variant="secondary">{result.detectedLanguage}</Badge>
+          {result.isTurkmen && <Badge className="bg-primary text-primary-foreground">Türkmen dili</Badge>}
+        </div>
+      </Card>
+
+      {/* Proficiency Level */}
+      {result.proficiencyLevel && (
+        <Card className="p-6 border-border/50 text-center">
+          <p className="text-sm text-muted-foreground mb-2">
+            {result.isTurkmen ? "Türkmen dili derejesi" : "CEFR Derejesi"}
+          </p>
+          <span className={`${levelColors[result.proficiencyLevel] || "bg-primary"} text-primary-foreground text-3xl font-heading font-bold px-5 py-2 rounded-xl inline-block`}>
+            {result.proficiencyLevel}
+          </span>
+          {result.proficiencyLabel && (
+            <p className="text-muted-foreground mt-2 text-sm">{result.proficiencyLabel}</p>
           )}
+          {result.confidence > 0 && (
+            <div className="mt-4 max-w-xs mx-auto">
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-muted-foreground">Ynam</span>
+                <span className="font-heading font-bold text-primary">{Math.round(result.confidence * 100)}%</span>
+              </div>
+              <Progress value={result.confidence * 100} className="h-2" />
+            </div>
+          )}
+        </Card>
+      )}
 
-          <Card className="p-6 border-border/50">
-            <h3 className="font-heading font-semibold text-foreground mb-3 flex items-center gap-2">
-              <span className="text-lg">🔍</span> Seljerme
-            </h3>
-            <p className="text-muted-foreground leading-relaxed">{result.analysis}</p>
-          </Card>
+      {/* Detailed Analysis */}
+      <Card className="p-6 border-border/50">
+        <h3 className="font-heading font-semibold text-foreground mb-3 flex items-center gap-2">
+          <span className="text-lg">🔍</span> Seljerme
+        </h3>
+        <p className="text-muted-foreground leading-relaxed">{result.analysis}</p>
+      </Card>
 
-          {result.suggestions && result.suggestions.length > 0 && (
+      {/* Turkmen-specific assessments */}
+      {result.isTurkmen && (
+        <>
+          {result.grammarNotes && (
             <Card className="p-6 border-border/50">
               <h3 className="font-heading font-semibold text-foreground mb-3 flex items-center gap-2">
-                <span className="text-lg">💡</span> Teklipler
+                <span className="text-lg">📝</span> Grammatika seljermesi
               </h3>
-              <ul className="space-y-2">
-                {result.suggestions.map((s, i) => (
-                  <li key={i} className="flex items-start gap-2 text-muted-foreground">
-                    <span className="text-accent mt-0.5">•</span>
-                    <span>{s}</span>
-                  </li>
-                ))}
-              </ul>
+              <p className="text-muted-foreground leading-relaxed">{result.grammarNotes}</p>
             </Card>
           )}
-        </div>
+
+          {result.vocabularyNotes && (
+            <Card className="p-6 border-border/50">
+              <h3 className="font-heading font-semibold text-foreground mb-3 flex items-center gap-2">
+                <span className="text-lg">📚</span> Söz baýlygy
+              </h3>
+              <p className="text-muted-foreground leading-relaxed">{result.vocabularyNotes}</p>
+            </Card>
+          )}
+
+          {result.pronunciationNotes && (
+            <Card className="p-6 border-border/50">
+              <h3 className="font-heading font-semibold text-foreground mb-3 flex items-center gap-2">
+                <span className="text-lg">🗣️</span> Aýdylyş seljermesi
+              </h3>
+              <p className="text-muted-foreground leading-relaxed">{result.pronunciationNotes}</p>
+            </Card>
+          )}
+        </>
+      )}
+
+      {/* Suggestions */}
+      {result.suggestions && result.suggestions.length > 0 && (
+        <Card className="p-6 border-border/50">
+          <h3 className="font-heading font-semibold text-foreground mb-3 flex items-center gap-2">
+            <span className="text-lg">💡</span> Teklipler
+          </h3>
+          <ul className="space-y-2">
+            {result.suggestions.map((s, i) => (
+              <li key={i} className="flex items-start gap-2 text-muted-foreground">
+                <span className="text-accent mt-0.5">•</span>
+                <span>{s}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
       )}
     </div>
   );
