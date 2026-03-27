@@ -3,13 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CEFRResult } from "@/components/CEFRResult";
-import { EvaluationLog } from "@/components/EvaluationLog";
+import { SpellCheckTab } from "@/components/SpellCheckTab";
 import { TranslationTab } from "@/components/TranslationTab";
 import { AudioTab } from "@/components/AudioTab";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Loader2, Languages, Send, BookOpen, ArrowRightLeft, Mic } from "lucide-react";
+import { Languages, SpellCheck, ArrowRightLeft, Mic } from "lucide-react";
 
 interface AnalysisResult {
   level: string;
