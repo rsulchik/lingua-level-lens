@@ -1,81 +1,10 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Card } from "@/components/ui/card";
+import { Languages, SpellCheck, ArrowRightLeft, Mic } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SpellCheckTab } from "@/components/SpellCheckTab";
 import { TranslationTab } from "@/components/TranslationTab";
 import { AudioTab } from "@/components/AudioTab";
-import { Languages, SpellCheck, ArrowRightLeft, Mic } from "lucide-react";
-
-interface AnalysisResult {
-  level: string;
-  confidence: number;
-  explanation: string;
-  features: string[];
-  levelDescription: string;
-  detectedLanguage: string;
-  isEnglish: boolean;
-  rawModelOutput: string;
-  preprocessingSteps: string[];
-}
-
-interface LogEntry {
-  timestamp: string;
-  preprocessingSteps: string[];
-  rawModelOutput: string;
-  level: string;
-  confidence: number;
-}
-
-const SAMPLE_TEXTS: Record<string, { label: string; text: string }> = {
-  a1: { label: "A1 Nusga", text: "I like cats. My cat is big. I go to school every day. I eat breakfast in the morning." },
-  b1: { label: "B1 Nusga", text: "I believe that learning a new language is one of the most rewarding experiences a person can have. Although it takes time and dedication, the ability to communicate with people from different cultures is incredibly valuable." },
-  c1: { label: "C1 Nusga", text: "The proliferation of artificial intelligence across various sectors has engendered both unprecedented opportunities and formidable ethical challenges. While proponents argue that AI-driven automation will catalyze economic growth and alleviate mundane labor, critics contend that the displacement of human workers necessitates comprehensive policy frameworks to mitigate socioeconomic disparities." },
-};
 
 export default function Index() {
-  const [text, setText] = useState("");
-  const [result, setResult] = useState<AnalysisResult | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-
-  const handleAnalyze = async () => {
-    if (text.trim().length < 10) {
-      toast.error("Azyndan 10 simwol ýazyň.");
-      return;
-    }
-
-    setIsLoading(true);
-    setResult(null);
-
-    try {
-      const { data, error } = await supabase.functions.invoke("analyze-text", {
-        body: { text: text.trim() },
-      });
-
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
-
-      setResult(data);
-
-      const logEntry: LogEntry = {
-        timestamp: new Date().toLocaleString(),
-        preprocessingSteps: data.preprocessingSteps || [],
-        rawModelOutput: data.rawModelOutput || "",
-        level: data.level,
-        confidence: data.confidence,
-      };
-      setLogs((prev) => [logEntry, ...prev]);
-      toast.success(`Seljerme tamamlandy: ${data.level}`);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Seljerme şowsuz boldy";
-      toast.error(message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <header className="gradient-hero py-12 px-4">
@@ -87,17 +16,17 @@ export default function Index() {
             </h1>
           </div>
           <p className="text-primary-foreground/80 text-lg font-body max-w-xl mx-auto">
-            Emeli aň bilen dil ussatlygyňyzy barlaň — CEFR baha bermek, terjime we ses seljermesi.
+            Emeli aň bilen türkmen diliniň orfografiýasyny barlaň, terjime ediň we sesi seljerň.
           </p>
         </div>
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-10">
-        <Tabs defaultValue="cefr" className="space-y-6">
+        <Tabs defaultValue="spellcheck" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3 h-12">
-            <TabsTrigger value="cefr" className="gap-2 font-heading text-sm">
-              <BookOpen className="h-4 w-4" />
-              CEFR Baha
+            <TabsTrigger value="spellcheck" className="gap-2 font-heading text-sm">
+              <SpellCheck className="h-4 w-4" />
+              Orfografiýa
             </TabsTrigger>
             <TabsTrigger value="translate" className="gap-2 font-heading text-sm">
               <ArrowRightLeft className="h-4 w-4" />
@@ -109,62 +38,14 @@ export default function Index() {
             </TabsTrigger>
           </TabsList>
 
-          {/* CEFR Assessment Tab */}
-          <TabsContent value="cefr" className="space-y-8">
-            <Card className="p-6 border-border/50 shadow-sm">
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Tekst nusgasyny ýazyň ýa-da goýuň
-              </label>
-              <Textarea
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder="Bu ýere tekst ýazyň ýa-da goýuň (azyndan 10 simwol)..."
-                className="min-h-[160px] resize-y text-base bg-background border-input focus:ring-ring"
-                maxLength={5000}
-              />
-              <div className="flex items-center justify-between mt-3">
-                <span className="text-xs text-muted-foreground">{text.length} / 5000</span>
-                <div className="flex gap-2 flex-wrap">
-                  {Object.entries(SAMPLE_TEXTS).map(([key, sample]) => (
-                    <button
-                      key={key}
-                      onClick={() => setText(sample.text)}
-                      className="text-xs text-primary hover:text-primary/80 underline underline-offset-2 transition-colors"
-                    >
-                      {sample.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <Button
-                onClick={handleAnalyze}
-                disabled={isLoading || text.trim().length < 10}
-                className="w-full mt-4 h-12 text-base font-heading font-semibold"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Seljerme edilýär...
-                  </>
-                ) : (
-                  <>
-                    <Send className="mr-2 h-5 w-5" />
-                    Derejäni kesgitle
-                  </>
-                )}
-              </Button>
-            </Card>
-
-            {result && <CEFRResult result={result} />}
-            <EvaluationLog logs={logs} />
+          <TabsContent value="spellcheck">
+            <SpellCheckTab />
           </TabsContent>
 
-          {/* Translation Tab */}
           <TabsContent value="translate">
             <TranslationTab />
           </TabsContent>
 
-          {/* Audio Tab */}
           <TabsContent value="audio">
             <AudioTab />
           </TabsContent>
@@ -172,7 +53,7 @@ export default function Index() {
 
         <div className="text-center text-xs text-muted-foreground py-6 space-y-1">
           <p>Lovable AI esasynda işleýär · Türkmen bazary üçin döredildi</p>
-          <p>Bu gural emeli aňa esaslanýan çaklama berýär. Resmi sertifikasiýa üçin ygtyýarly synag merkezlerine ýüz tutuň.</p>
+          <p>Bu gural emeli aňa esaslanýan çaklama berýär.</p>
         </div>
       </main>
     </div>
