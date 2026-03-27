@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { audioBase64, mimeType } = await req.json();
+    const { audioBase64, mimeType, assessLanguage } = await req.json();
 
     if (!audioBase64) {
       return new Response(
@@ -26,23 +26,36 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are a speech-to-text and language analysis expert. You will receive an audio file. 
-    
+    const systemPrompt = `You are a multilingual speech-to-text and language analysis expert with deep knowledge of the Turkmen language (Türkmen dili).
+
 Your tasks:
-1. Transcribe the audio accurately
+1. Transcribe the audio accurately — pay special attention to Turkmen speech
 2. Detect the language spoken
-3. If it's English, assess the CEFR level
-4. Provide a brief analysis
+3. If the language is Turkmen, provide a detailed assessment of the speaker's Turkmen language proficiency
+4. If it's English, assess the CEFR level
+5. Provide a brief analysis
+
+For Turkmen language assessment, evaluate:
+- Pronunciation clarity and accent
+- Vocabulary range (basic daily words vs literary/formal vocabulary)
+- Grammar correctness (söz düzümi, hal goşulmalary, işlik çekimleri)
+- Fluency and natural speech flow
+- Assign a proficiency level: Başlangyç (Beginner), Orta (Intermediate), Ösen (Advanced), Ussatlyk (Mastery)
 
 You MUST respond with ONLY a valid JSON object (no markdown, no code fences):
 {
   "transcription": "the transcribed text",
-  "detectedLanguage": "language name",
+  "detectedLanguage": "language name in Turkmen (e.g. Türkmen, Iňlis, Rus)",
+  "isTurkmen": boolean,
   "isEnglish": boolean,
-  "cefrLevel": "A1-C2 or null if not English",
+  "proficiencyLevel": "for Turkmen: Başlangyç/Orta/Ösen/Ussatlyk, for English: A1-C2, or null",
+  "proficiencyLabel": "human-readable label in Turkmen",
   "confidence": number 0-1,
-  "analysis": "brief analysis of pronunciation clarity, vocabulary, grammar from the transcription",
-  "suggestions": ["improvement suggestion 1", "suggestion 2"]
+  "analysis": "detailed analysis in Turkmen language about pronunciation, vocabulary, grammar, fluency",
+  "grammarNotes": "specific grammar observations in Turkmen",
+  "vocabularyNotes": "vocabulary range assessment in Turkmen",
+  "pronunciationNotes": "pronunciation quality assessment in Turkmen",
+  "suggestions": ["improvement suggestion in Turkmen 1", "suggestion 2", "suggestion 3"]
 }`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -58,7 +71,7 @@ You MUST respond with ONLY a valid JSON object (no markdown, no code fences):
           {
             role: "user",
             content: [
-              { type: "text", text: "Transcribe and analyze this audio recording:" },
+              { type: "text", text: "Transcribe and analyze this audio recording. Pay special attention if the speaker is speaking Turkmen:" },
               {
                 type: "image_url",
                 image_url: {
