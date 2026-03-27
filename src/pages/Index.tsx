@@ -29,9 +29,9 @@ interface LogEntry {
 }
 
 const SAMPLE_TEXTS: Record<string, { label: string; text: string }> = {
-  a1: { label: "A1 Sample", text: "I like cats. My cat is big. I go to school every day. I eat breakfast in the morning." },
-  b1: { label: "B1 Sample", text: "I believe that learning a new language is one of the most rewarding experiences a person can have. Although it takes time and dedication, the ability to communicate with people from different cultures is incredibly valuable." },
-  c1: { label: "C1 Sample", text: "The proliferation of artificial intelligence across various sectors has engendered both unprecedented opportunities and formidable ethical challenges. While proponents argue that AI-driven automation will catalyze economic growth and alleviate mundane labor, critics contend that the displacement of human workers necessitates comprehensive policy frameworks to mitigate socioeconomic disparities." },
+  a1: { label: "A1 Nusga", text: "I like cats. My cat is big. I go to school every day. I eat breakfast in the morning." },
+  b1: { label: "B1 Nusga", text: "I believe that learning a new language is one of the most rewarding experiences a person can have. Although it takes time and dedication, the ability to communicate with people from different cultures is incredibly valuable." },
+  c1: { label: "C1 Nusga", text: "The proliferation of artificial intelligence across various sectors has engendered both unprecedented opportunities and formidable ethical challenges. While proponents argue that AI-driven automation will catalyze economic growth and alleviate mundane labor, critics contend that the displacement of human workers necessitates comprehensive policy frameworks to mitigate socioeconomic disparities." },
 };
 
 export default function Index() {
@@ -42,7 +42,7 @@ export default function Index() {
 
   const handleAnalyze = async () => {
     if (text.trim().length < 10) {
-      toast.error("Please enter at least 10 characters.");
+      toast.error("Azyndan 10 simwol ýazyň.");
       return;
     }
 
@@ -68,17 +68,17 @@ export default function Index() {
       };
       setLogs((prev) => [logEntry, ...prev]);
 
-      console.log("=== CEFR Evaluation Log ===");
-      console.log("Timestamp:", logEntry.timestamp);
-      console.log("Level:", data.level, `(${Math.round(data.confidence * 100)}%)`);
-      console.log("Preprocessing:", data.preprocessingSteps);
-      console.log("Raw output:", data.rawModelOutput);
+      console.log("=== CEFR Baha beriş ===");
+      console.log("Wagt:", logEntry.timestamp);
+      console.log("Dereje:", data.level, `(${Math.round(data.confidence * 100)}%)`);
+      console.log("Deslapky ädimler:", data.preprocessingSteps);
+      console.log("Model çykyşy:", data.rawModelOutput);
 
-      toast.success(`Analysis complete: ${data.level}`);
+      toast.success(`Seljerme tamamlandy: ${data.level}`);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Analysis failed";
+      const message = err instanceof Error ? err.message : "Seljerme şowsuz boldy";
       toast.error(message);
-      console.error("Analysis error:", err);
+      console.error("Seljerme ýalňyşlygy:", err);
     } finally {
       setIsLoading(false);
     }
@@ -86,7 +86,7 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
+      {/* Baş bölüm */}
       <header className="gradient-hero py-12 px-4">
         <div className="max-w-3xl mx-auto text-center">
           <div className="flex items-center justify-center gap-3 mb-4">
@@ -96,22 +96,22 @@ export default function Index() {
             </h1>
           </div>
           <p className="text-primary-foreground/80 text-lg font-body max-w-xl mx-auto">
-            AI-powered language proficiency assessment using the CEFR scale.
-            Paste any text and get an instant evaluation.
+            Emeli aň bilen iňlis diliniň derejesini CEFR şkalasy boýunça kesgitlemek.
+            Islendik teksti ýerleşdiriň we dessine baha alyň.
           </p>
         </div>
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-10 space-y-8">
-        {/* Input Section */}
+        {/* Tekst girizmek */}
         <Card className="p-6 border-border/50 shadow-sm">
           <label className="block text-sm font-medium text-foreground mb-2">
-            Enter or paste your text sample
+            Tekst nusgasyny ýazyň ýa-da goýuň
           </label>
           <Textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Write or paste a text sample here (minimum 10 characters)..."
+            placeholder="Bu ýere tekst ýazyň ýa-da goýuň (azyndan 10 simwol)..."
             className="min-h-[160px] resize-y text-base bg-background border-input focus:ring-ring"
             maxLength={5000}
           />
@@ -137,27 +137,27 @@ export default function Index() {
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Analyzing...
+                Seljerme edilýär...
               </>
             ) : (
               <>
                 <Send className="mr-2 h-5 w-5" />
-                Assess Proficiency
+                Derejäni kesgitle
               </>
             )}
           </Button>
         </Card>
 
-        {/* Results */}
+        {/* Netijeler */}
         {result && <CEFRResult result={result} />}
 
-        {/* Log */}
+        {/* Jurnal */}
         <EvaluationLog logs={logs} />
 
-        {/* Info Footer */}
+        {/* Aşaky maglumat */}
         <div className="text-center text-xs text-muted-foreground py-6 space-y-1">
-          <p>Powered by Lovable AI (Gemini) · CEFR Classification</p>
-          <p>This tool provides an AI-based estimate. For official certification, consult accredited testing centers.</p>
+          <p>Lovable AI (Gemini) esasynda işleýär · CEFR klassifikasiýasy</p>
+          <p>Bu gural emeli aňa esaslanýan çaklama berýär. Resmi sertifikasiýa üçin ygtyýarly synag merkezlerine ýüz tutuň.</p>
         </div>
       </main>
     </div>

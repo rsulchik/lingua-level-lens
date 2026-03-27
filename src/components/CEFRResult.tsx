@@ -24,12 +24,12 @@ const levelColors: Record<string, string> = {
 };
 
 const levelLabels: Record<string, string> = {
-  A1: "Beginner",
-  A2: "Elementary",
-  B1: "Intermediate",
-  B2: "Upper-Intermediate",
-  C1: "Advanced",
-  C2: "Proficiency",
+  A1: "Başlangyç",
+  A2: "Esasy dereje",
+  B1: "Orta dereje",
+  B2: "Orta-ýokary dereje",
+  C1: "Ösen dereje",
+  C2: "Ussatlyk derejesi",
 };
 
 export function CEFRResult({ result }: CEFRResultProps) {
@@ -37,10 +37,10 @@ export function CEFRResult({ result }: CEFRResultProps) {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Level Badge */}
+      {/* Dereje nyşany */}
       <Card className="p-8 text-center gradient-card border-border/50 shadow-lg">
         <p className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wider">
-          Predicted CEFR Level
+          Çaklanýan CEFR derejesi
         </p>
         <div className="flex items-center justify-center gap-4 mb-4">
           <span
@@ -56,32 +56,32 @@ export function CEFRResult({ result }: CEFRResultProps) {
 
         {!result.isEnglish && (
           <Badge variant="secondary" className="mt-3">
-            Language detected: {result.detectedLanguage}
+            Ýüze çykarylan dil: {result.detectedLanguage}
           </Badge>
         )}
       </Card>
 
-      {/* Confidence Score */}
+      {/* Ynam derejesi */}
       <Card className="p-6 border-border/50">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-foreground">Confidence Score</span>
+          <span className="text-sm font-medium text-foreground">Ynam derejesi</span>
           <span className="text-sm font-heading font-bold text-primary">{confidencePercent}%</span>
         </div>
         <Progress value={confidencePercent} className="h-3" />
       </Card>
 
-      {/* Explanation */}
+      {/* Düşündiriş */}
       <Card className="p-6 border-border/50">
         <h3 className="font-heading font-semibold text-foreground mb-3 flex items-center gap-2">
-          <span className="text-lg">🔍</span> Analysis Explanation
+          <span className="text-lg">🔍</span> Seljerme düşündirişi
         </h3>
         <p className="text-muted-foreground leading-relaxed">{result.explanation}</p>
       </Card>
 
-      {/* Key Features */}
+      {/* Esasy aýratynlyklar */}
       <Card className="p-6 border-border/50">
         <h3 className="font-heading font-semibold text-foreground mb-3 flex items-center gap-2">
-          <span className="text-lg">✨</span> Key Features Detected
+          <span className="text-lg">✨</span> Ýüze çykarylan esasy aýratynlyklar
         </h3>
         <ul className="space-y-2">
           {result.features.map((feature, i) => (
