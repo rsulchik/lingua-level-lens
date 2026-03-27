@@ -2,11 +2,14 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CEFRResult } from "@/components/CEFRResult";
 import { EvaluationLog } from "@/components/EvaluationLog";
+import { TranslationTab } from "@/components/TranslationTab";
+import { AudioTab } from "@/components/AudioTab";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Languages, Send } from "lucide-react";
+import { Loader2, Languages, Send, BookOpen, ArrowRightLeft, Mic } from "lucide-react";
 
 interface AnalysisResult {
   level: string;
@@ -67,18 +70,10 @@ export default function Index() {
         confidence: data.confidence,
       };
       setLogs((prev) => [logEntry, ...prev]);
-
-      console.log("=== CEFR Baha beriş ===");
-      console.log("Wagt:", logEntry.timestamp);
-      console.log("Dereje:", data.level, `(${Math.round(data.confidence * 100)}%)`);
-      console.log("Deslapky ädimler:", data.preprocessingSteps);
-      console.log("Model çykyşy:", data.rawModelOutput);
-
       toast.success(`Seljerme tamamlandy: ${data.level}`);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Seljerme şowsuz boldy";
       toast.error(message);
-      console.error("Seljerme ýalňyşlygy:", err);
     } finally {
       setIsLoading(false);
     }
@@ -86,7 +81,6 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Baş bölüm */}
       <header className="gradient-hero py-12 px-4">
         <div className="max-w-3xl mx-auto text-center">
           <div className="flex items-center justify-center gap-3 mb-4">
@@ -96,67 +90,91 @@ export default function Index() {
             </h1>
           </div>
           <p className="text-primary-foreground/80 text-lg font-body max-w-xl mx-auto">
-            Emeli aň bilen iňlis diliniň derejesini CEFR şkalasy boýunça kesgitlemek.
-            Islendik teksti ýerleşdiriň we dessine baha alyň.
+            Emeli aň bilen dil ussatlygyňyzy barlaň — CEFR baha bermek, terjime we ses seljermesi.
           </p>
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-10 space-y-8">
-        {/* Tekst girizmek */}
-        <Card className="p-6 border-border/50 shadow-sm">
-          <label className="block text-sm font-medium text-foreground mb-2">
-            Tekst nusgasyny ýazyň ýa-da goýuň
-          </label>
-          <Textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Bu ýere tekst ýazyň ýa-da goýuň (azyndan 10 simwol)..."
-            className="min-h-[160px] resize-y text-base bg-background border-input focus:ring-ring"
-            maxLength={5000}
-          />
-          <div className="flex items-center justify-between mt-3">
-            <span className="text-xs text-muted-foreground">{text.length} / 5000</span>
-            <div className="flex gap-2 flex-wrap">
-              {Object.entries(SAMPLE_TEXTS).map(([key, sample]) => (
-                <button
-                  key={key}
-                  onClick={() => setText(sample.text)}
-                  className="text-xs text-primary hover:text-primary/80 underline underline-offset-2 transition-colors"
-                >
-                  {sample.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <Button
-            onClick={handleAnalyze}
-            disabled={isLoading || text.trim().length < 10}
-            className="w-full mt-4 h-12 text-base font-heading font-semibold"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Seljerme edilýär...
-              </>
-            ) : (
-              <>
-                <Send className="mr-2 h-5 w-5" />
-                Derejäni kesgitle
-              </>
-            )}
-          </Button>
-        </Card>
+      <main className="max-w-3xl mx-auto px-4 py-10">
+        <Tabs defaultValue="cefr" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3 h-12">
+            <TabsTrigger value="cefr" className="gap-2 font-heading text-sm">
+              <BookOpen className="h-4 w-4" />
+              CEFR Baha
+            </TabsTrigger>
+            <TabsTrigger value="translate" className="gap-2 font-heading text-sm">
+              <ArrowRightLeft className="h-4 w-4" />
+              Terjime
+            </TabsTrigger>
+            <TabsTrigger value="audio" className="gap-2 font-heading text-sm">
+              <Mic className="h-4 w-4" />
+              Ses
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Netijeler */}
-        {result && <CEFRResult result={result} />}
+          {/* CEFR Assessment Tab */}
+          <TabsContent value="cefr" className="space-y-8">
+            <Card className="p-6 border-border/50 shadow-sm">
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Tekst nusgasyny ýazyň ýa-da goýuň
+              </label>
+              <Textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder="Bu ýere tekst ýazyň ýa-da goýuň (azyndan 10 simwol)..."
+                className="min-h-[160px] resize-y text-base bg-background border-input focus:ring-ring"
+                maxLength={5000}
+              />
+              <div className="flex items-center justify-between mt-3">
+                <span className="text-xs text-muted-foreground">{text.length} / 5000</span>
+                <div className="flex gap-2 flex-wrap">
+                  {Object.entries(SAMPLE_TEXTS).map(([key, sample]) => (
+                    <button
+                      key={key}
+                      onClick={() => setText(sample.text)}
+                      className="text-xs text-primary hover:text-primary/80 underline underline-offset-2 transition-colors"
+                    >
+                      {sample.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <Button
+                onClick={handleAnalyze}
+                disabled={isLoading || text.trim().length < 10}
+                className="w-full mt-4 h-12 text-base font-heading font-semibold"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Seljerme edilýär...
+                  </>
+                ) : (
+                  <>
+                    <Send className="mr-2 h-5 w-5" />
+                    Derejäni kesgitle
+                  </>
+                )}
+              </Button>
+            </Card>
 
-        {/* Jurnal */}
-        <EvaluationLog logs={logs} />
+            {result && <CEFRResult result={result} />}
+            <EvaluationLog logs={logs} />
+          </TabsContent>
 
-        {/* Aşaky maglumat */}
+          {/* Translation Tab */}
+          <TabsContent value="translate">
+            <TranslationTab />
+          </TabsContent>
+
+          {/* Audio Tab */}
+          <TabsContent value="audio">
+            <AudioTab />
+          </TabsContent>
+        </Tabs>
+
         <div className="text-center text-xs text-muted-foreground py-6 space-y-1">
-          <p>Lovable AI (Gemini) esasynda işleýär · CEFR klassifikasiýasy</p>
+          <p>Lovable AI esasynda işleýär · Türkmen bazary üçin döredildi</p>
           <p>Bu gural emeli aňa esaslanýan çaklama berýär. Resmi sertifikasiýa üçin ygtyýarly synag merkezlerine ýüz tutuň.</p>
         </div>
       </main>
