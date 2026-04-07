@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, AlertTriangle, Send, Sparkles } from "lucide-react";
+import { Loader2, CheckCircle2, AlertTriangle, Send, Sparkles, BookOpen } from "lucide-react";
+import { checkSpelling, getDictionary } from "@/lib/turkmen-dictionary";
 
 interface SpellingError {
   original: string;
@@ -25,6 +26,17 @@ export function SpellCheckTab() {
   const [text, setText] = useState("");
   const [result, setResult] = useState<SpellCheckResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [dictReady, setDictReady] = useState(false);
+  const [dictWordCount, setDictWordCount] = useState(0);
+
+  useEffect(() => {
+    getDictionary().then((dict) => {
+      setDictReady(true);
+      setDictWordCount(dict.size);
+    }).catch(() => {
+      toast.error("Sözlük ýüklenip bilinmedi");
+    });
+  }, []);
 
   const handleCheck = async () => {
     if (text.trim().length < 3) {
@@ -36,8 +48,24 @@ export function SpellCheckTab() {
     setResult(null);
 
     try {
+      // Step 1: Dictionary check
+      const { misspelled } = await checkSpelling(text);
+
+      if (misspelled.length === 0) {
+        setResult({
+          correctedText: text,
+          errors: [],
+          summary: "Sözlük boýunça ähli sözler dogry.",
+          isCorrect: true,
+        });
+        toast.success("Tekst dogry ýazylan! ✅");
+        setIsLoading(false);
+        return;
+      }
+
+      // Step 2: Send misspelled words + full text to AI for corrections
       const { data, error } = await supabase.functions.invoke("check-spelling", {
-        body: { text: text.trim() },
+        body: { text: text.trim(), misspelledWords: misspelled },
       });
 
       if (error) throw error;
@@ -69,9 +97,17 @@ export function SpellCheckTab() {
   return (
     <div className="space-y-6">
       <Card className="p-6 border-border/50 shadow-sm">
-        <label className="block text-sm font-medium text-foreground mb-2">
-          Türkmen dilinde tekst ýazyň
-        </label>
+        <div className="flex items-center justify-between mb-2">
+          <label className="block text-sm font-medium text-foreground">
+            Türkmen dilinde tekst ýazyň
+          </label>
+          {dictReady && (
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <BookOpen className="h-3.5 w-3.5" />
+              Sözlük: {dictWordCount.toLocaleString()} söz
+            </span>
+          )}
+        </div>
         <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -81,10 +117,16 @@ export function SpellCheckTab() {
         />
         <div className="flex items-center justify-between mt-3">
           <span className="text-xs text-muted-foreground">{text.length} / 5000</span>
+          {!dictReady && (
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Sözlük ýüklenýär...
+            </span>
+          )}
         </div>
         <Button
           onClick={handleCheck}
-          disabled={isLoading || text.trim().length < 3}
+          disabled={isLoading || text.trim().length < 3 || !dictReady}
           className="w-full mt-4 h-12 text-base font-heading font-semibold"
         >
           {isLoading ? (
@@ -111,6 +153,7 @@ export function SpellCheckTab() {
                 <p className="text-lg font-heading font-semibold text-foreground">
                   Tekst dogry ýazylan!
                 </p>
+                <p className="text-sm text-muted-foreground">{result.summary}</p>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-3">

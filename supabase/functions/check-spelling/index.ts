@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { text } = await req.json();
+    const { text, misspelledWords } = await req.json();
 
     if (!text || typeof text !== "string" || text.trim().length < 3) {
       return new Response(
@@ -33,15 +33,17 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `Sen türkmen diliniň orfografiýa barlagçysysyň. Seniň wezipäň — ulanyjynyň ýazan tekstindäki ýalňyş ýazylan sözleri tapmak we dogry görnüşini teklip etmek.
+    const misspelledList = Array.isArray(misspelledWords) ? misspelledWords : [];
+
+    const systemPrompt = `Sen türkmen diliniň orfografiýa barlagçysysyň. Ulanyjynyň teksti Hunspell sözlügi bilen öňünden barlandy. Sözlükde tapylmadyk sözler saňa iberildi.
+
+Seniň wezipäň:
+- Iberilen ýalňyş sözleri seret we dogry görnüşini tap
+- Käbir sözler sözlükde bolmasa-da dogry bolup biler (at, ýer ady, täze söz) — olary ýalňyş diýme
+- Her ýalňyş söz üçin dogry görnüşini we düşündirişini ber
+- Eger ähli sözler dogry bolsa, boş "errors" massiw gaýtar
 
 Türkmen elipbiýi: A, B, Ç, D, E, Ä, F, G, H, I, J, Ž, K, L, M, N, Ň, O, Ö, P, R, S, Ş, T, U, Ü, W, Y, Ý, Z
-
-Möhüm düzgünler:
-- Diňe orfografiýa ýalňyşlyklaryny tap (ýalňyş ýazylan sözler)
-- Grammatika ýalňyşlyklaryny hem bellemeli
-- Her ýalňyş söz üçin dogry görnüşini we düşündirişini ber
-- Eger tekst dogry ýazylan bolsa, boş "errors" massiw gaýtar
 
 Diňe şu JSON formatynda jogap ber (markdown ýok, kod blogy ýok):
 {
@@ -58,6 +60,8 @@ Diňe şu JSON formatynda jogap ber (markdown ýok, kod blogy ýok):
   "isCorrect": true/false
 }`;
 
+    const userMessage = `Tekst:\n"${text.trim()}"\n\nSözlükde tapylmadyk sözler: ${misspelledList.length > 0 ? misspelledList.join(", ") : "(ýok)"}`;
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -68,7 +72,7 @@ Diňe şu JSON formatynda jogap ber (markdown ýok, kod blogy ýok):
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Şu teksti barla we ýalňyşlyklary tap:\n\n"${text.trim()}"` },
+          { role: "user", content: userMessage },
         ],
       }),
     });
