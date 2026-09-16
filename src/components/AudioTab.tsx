@@ -91,6 +91,7 @@ export function AudioTab() {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<AudioResult | null>(null);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [language, setLanguage] = useState("tk");
   const recordingRef = useRef<{
     stream: MediaStream;
     ctx: AudioContext;
@@ -184,7 +185,11 @@ export function AudioTab() {
       });
 
       const { data, error } = await supabase.functions.invoke("transcribe-audio", {
-        body: { audioBase64: base64, mimeType: audioBlob.type || "audio/webm" },
+        body: {
+          audioBase64: base64,
+          mimeType: audioBlob.type || "audio/webm",
+          language: language === "auto" ? undefined : language,
+        },
       });
 
       if (error) throw error;
