@@ -6,6 +6,15 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Mic, MicOff, Upload } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const LANGUAGES = [
+  { value: "tk", label: "Türkmen dili" },
+  { value: "en", label: "Iňlis dili" },
+  { value: "ru", label: "Rus dili" },
+  { value: "tr", label: "Türk dili" },
+  { value: "auto", label: "Awtomatik kesgitle" },
+];
 
 interface AudioResult {
   transcription: string;
