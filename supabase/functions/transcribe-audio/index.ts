@@ -6,13 +6,38 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function base64ToBytes(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+function extFor(mimeType: string): string {
+  const base = (mimeType || "").split(";")[0].trim();
+  const map: Record<string, string> = {
+    "audio/wav": "wav",
+    "audio/x-wav": "wav",
+    "audio/wave": "wav",
+    "audio/webm": "webm",
+    "audio/ogg": "ogg",
+    "audio/mp4": "mp4",
+    "audio/m4a": "m4a",
+    "audio/x-m4a": "m4a",
+    "audio/mpeg": "mp3",
+    "audio/mp3": "mp3",
+    "audio/flac": "flac",
+  };
+  return map[base] ?? "wav";
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { audioBase64, mimeType, assessLanguage } = await req.json();
+    const { audioBase64, mimeType } = await req.json();
 
     if (!audioBase64) {
       return new Response(
@@ -26,98 +51,145 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are a multilingual speech-to-text and language analysis expert with deep knowledge of the Turkmen language (Türkmen dili).
+    const bytes = base64ToBytes(audioBase64);
+    if (bytes.length < 2048) {
+      return new Response(
+        JSON.stringify({ error: "Ses ýazgysy gaty gysga ýa-da boş. Täzeden synanyşyň." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-Your tasks:
-1. Transcribe the audio accurately — pay special attention to Turkmen speech
-2. Detect the language spoken
-3. If the language is Turkmen, provide a detailed assessment of the speaker's Turkmen language proficiency
-4. If it's English, assess the CEFR level
-5. Provide a brief analysis
+    // ---- Step 1: dedicated speech-to-text model ----
+    const ext = extFor(mimeType);
+    const form = new FormData();
+    form.append("model", "google/gemini-3.5-transcribe");
+    form.append(
+      "file",
+      new Blob([bytes], { type: (mimeType || "audio/wav").split(";")[0] }),
+      `recording.${ext}`
+    );
 
-For Turkmen language assessment, evaluate:
-- Pronunciation clarity and accent
-- Vocabulary range (basic daily words vs literary/formal vocabulary)
-- Grammar correctness (söz düzümi, hal goşulmalary, işlik çekimleri)
-- Fluency and natural speech flow
-- Assign a proficiency level: Başlangyç (Beginner), Orta (Intermediate), Ösen (Advanced), Ussatlyk (Mastery)
+    const sttRes = await fetch("https://ai.gateway.lovable.dev/v1/audio/transcriptions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}` },
+      body: form,
+    });
 
-You MUST respond with ONLY a valid JSON object (no markdown, no code fences):
+    if (!sttRes.ok) {
+      const status = sttRes.status;
+      const errText = await sttRes.text().catch(() => "");
+      console.error("STT error:", status, errText);
+      if (status === 429) {
+        return new Response(JSON.stringify({ error: "Çäklendirme aşyldy. Biraz garaşyň." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (status === 402) {
+        return new Response(JSON.stringify({ error: "Hyzmat kreditlary gutardy." }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(
+        JSON.stringify({ error: "Ses tanalmady. Başga formatda ýa-da has arassa ýazgy bilen synanyşyň." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const sttData = await sttRes.json();
+    const transcription: string = (sttData.text ?? "").trim();
+
+    if (!transcription) {
+      return new Response(
+        JSON.stringify({ error: "Ses ýazgysynda söz tapylmady. Has ýokary sesde gepläp synanyşyň." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ---- Step 2: language + proficiency analysis on the transcript ----
+    const systemPrompt = `You are an expert linguist specializing in the Turkmen language (Türkmen dili) and CEFR assessment.
+
+You receive a transcript of spoken audio. Tasks:
+1. Detect the spoken language.
+2. If Turkmen: assess proficiency — vocabulary range, grammar (söz düzümi, hal goşulmalary, işlik çekimleri), fluency, register. Level: Başlangyç / Orta / Ösen / Ussatlyk.
+3. If English: assign a CEFR level A1–C2.
+4. Other languages: describe the level in Turkmen, proficiencyLevel may be null.
+
+Respond with ONLY a valid JSON object (no markdown, no code fences):
 {
-  "transcription": "the transcribed text",
-  "detectedLanguage": "language name in Turkmen (e.g. Türkmen, Iňlis, Rus)",
+  "detectedLanguage": "language name in Turkmen (Türkmen, Iňlis, Rus, ...)",
   "isTurkmen": boolean,
   "isEnglish": boolean,
-  "proficiencyLevel": "for Turkmen: Başlangyç/Orta/Ösen/Ussatlyk, for English: A1-C2, or null",
+  "proficiencyLevel": "Başlangyç/Orta/Ösen/Ussatlyk or A1-C2 or null",
   "proficiencyLabel": "human-readable label in Turkmen",
   "confidence": number 0-1,
-  "analysis": "detailed analysis in Turkmen language about pronunciation, vocabulary, grammar, fluency",
-  "grammarNotes": "specific grammar observations in Turkmen",
-  "vocabularyNotes": "vocabulary range assessment in Turkmen",
-  "pronunciationNotes": "pronunciation quality assessment in Turkmen",
-  "suggestions": ["improvement suggestion in Turkmen 1", "suggestion 2", "suggestion 3"]
+  "analysis": "detailed analysis in Turkmen",
+  "grammarNotes": "grammar observations in Turkmen",
+  "vocabularyNotes": "vocabulary assessment in Turkmen",
+  "pronunciationNotes": "notes in Turkmen based on transcript quality, hesitations, fillers",
+  "suggestions": ["teklip 1", "teklip 2", "teklip 3"]
 }`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-3.8-flash",
         messages: [
           { role: "system", content: systemPrompt },
-          {
-            role: "user",
-            content: [
-              { type: "text", text: "Transcribe and analyze this audio recording. Pay special attention if the speaker is speaking Turkmen:" },
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:${mimeType || "audio/webm"};base64,${audioBase64}`,
-                },
-              },
-            ],
-          },
+          { role: "user", content: `Transcript:\n"""${transcription}"""` },
         ],
       }),
     });
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Çäklendirme aşyldy. Biraz garaşyň." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Hyzmat kreditlary gutardy." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      throw new Error(`AI gateway error: ${response.status}`);
+    if (!aiRes.ok) {
+      const errText = await aiRes.text().catch(() => "");
+      console.error("AI gateway error:", aiRes.status, errText);
+      // Transcription still succeeded — return it without assessment.
+      return new Response(
+        JSON.stringify({
+          transcription,
+          detectedLanguage: "Näbelli",
+          isTurkmen: false,
+          isEnglish: false,
+          proficiencyLevel: null,
+          proficiencyLabel: null,
+          confidence: 0,
+          analysis: "Ses tanaldy, ýöne dil derejesi seljerilip bilinmedi.",
+          suggestions: [],
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-
-    if (!content) {
-      throw new Error("No response from AI model");
-    }
-
-    let cleaned = content.trim();
+    const aiData = await aiRes.json();
+    let cleaned = (aiData.choices?.[0]?.message?.content ?? "").trim();
     if (cleaned.startsWith("```")) {
       cleaned = cleaned.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
     }
 
-    const result = JSON.parse(cleaned);
+    let analysis: Record<string, unknown> = {};
+    try {
+      analysis = JSON.parse(cleaned);
+    } catch {
+      analysis = {
+        detectedLanguage: "Näbelli",
+        isTurkmen: false,
+        isEnglish: false,
+        proficiencyLevel: null,
+        proficiencyLabel: null,
+        confidence: 0,
+        analysis: cleaned || "Seljerme elýeterli däl.",
+        suggestions: [],
+      };
+    }
 
     return new Response(
-      JSON.stringify(result),
+      JSON.stringify({ ...analysis, transcription }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
