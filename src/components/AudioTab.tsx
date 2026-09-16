@@ -221,6 +221,22 @@ export function AudioTab() {
           Türkmen ýa-da iňlis dilinde ses ýazgysyny ýazdyryň. AI sesiňizi tanap, dil derejesini kesgitlär.
         </p>
 
+        <div className="mb-4">
+          <label className="text-sm font-heading font-medium text-foreground mb-2 block">
+            Ses ýazgysynyň dili
+          </label>
+          <Select value={language} onValueChange={setLanguage} disabled={isLoading || isRecording}>
+            <SelectTrigger className="h-12">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {LANGUAGES.map((l) => (
+                <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="flex flex-col sm:flex-row gap-3">
           <Button
             onClick={isRecording ? stopRecording : startRecording}
