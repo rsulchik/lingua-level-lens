@@ -6,6 +6,15 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Mic, MicOff, Upload } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const LANGUAGES = [
+  { value: "tk", label: "Türkmen dili" },
+  { value: "en", label: "Iňlis dili" },
+  { value: "ru", label: "Rus dili" },
+  { value: "tr", label: "Türk dili" },
+  { value: "auto", label: "Awtomatik kesgitle" },
+];
 
 interface AudioResult {
   transcription: string;
@@ -82,6 +91,7 @@ export function AudioTab() {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<AudioResult | null>(null);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [language, setLanguage] = useState("tk");
   const recordingRef = useRef<{
     stream: MediaStream;
     ctx: AudioContext;
@@ -175,7 +185,11 @@ export function AudioTab() {
       });
 
       const { data, error } = await supabase.functions.invoke("transcribe-audio", {
-        body: { audioBase64: base64, mimeType: audioBlob.type || "audio/webm" },
+        body: {
+          audioBase64: base64,
+          mimeType: audioBlob.type || "audio/webm",
+          language: language === "auto" ? undefined : language,
+        },
       });
 
       if (error) throw error;
@@ -206,6 +220,22 @@ export function AudioTab() {
         <p className="text-sm text-muted-foreground mb-4">
           Türkmen ýa-da iňlis dilinde ses ýazgysyny ýazdyryň. AI sesiňizi tanap, dil derejesini kesgitlär.
         </p>
+
+        <div className="mb-4">
+          <label className="text-sm font-heading font-medium text-foreground mb-2 block">
+            Ses ýazgysynyň dili
+          </label>
+          <Select value={language} onValueChange={setLanguage} disabled={isLoading || isRecording}>
+            <SelectTrigger className="h-12">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {LANGUAGES.map((l) => (
+                <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
           <Button

@@ -37,7 +37,7 @@ serve(async (req) => {
   }
 
   try {
-    const { audioBase64, mimeType } = await req.json();
+    const { audioBase64, mimeType, language } = await req.json();
 
     if (!audioBase64) {
       return new Response(
@@ -68,6 +68,10 @@ serve(async (req) => {
       new Blob([bytes], { type: (mimeType || "audio/wav").split(";")[0] }),
       `recording.${ext}`
     );
+    const allowedLangs = ["tk", "en", "ru", "tr"];
+    if (typeof language === "string" && allowedLangs.includes(language)) {
+      form.append("language", language);
+    }
 
     const sttRes = await fetch("https://ai.gateway.lovable.dev/v1/audio/transcriptions", {
       method: "POST",
