@@ -207,6 +207,8 @@ export function AudioTab() {
           audioBase64: base64,
           mimeType: audioBlob.type || "audio/webm",
           language: language === "auto" ? undefined : language,
+          liveTranscript: liveFinalSaved || undefined,
+
         },
       });
 
