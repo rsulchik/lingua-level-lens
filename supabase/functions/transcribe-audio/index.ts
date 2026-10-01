@@ -42,7 +42,7 @@ serve(async (req) => {
     if (!audioBase64) {
       return new Response(
         JSON.stringify({ error: "Ses ýazgysy berilmedi." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -55,7 +55,7 @@ serve(async (req) => {
     if (bytes.length < 2048) {
       return new Response(
         JSON.stringify({ error: "Ses ýazgysy gaty gysga ýa-da boş. Täzeden synanyşyň." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -97,17 +97,19 @@ serve(async (req) => {
       }
       return new Response(
         JSON.stringify({ error: "Ses tanalmady. Başga formatda ýa-da has arassa ýazgy bilen synanyşyň." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     const sttData = await sttRes.json();
-    const transcription: string = (sttData.text ?? "").trim();
+    const live = typeof liveTranscript === "string" ? liveTranscript.trim().slice(0, 4000) : "";
+    // STT model sometimes returns empty text for Turkmen; fall back to the live browser transcript.
+    const transcription: string = (sttData.text ?? "").trim() || live;
 
     if (!transcription) {
       return new Response(
         JSON.stringify({ error: "Ses ýazgysynda söz tapylmady. Has ýokary sesde gepläp synanyşyň." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
