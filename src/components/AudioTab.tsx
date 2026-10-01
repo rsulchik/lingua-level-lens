@@ -147,6 +147,9 @@ export function AudioTab() {
     if (!rec) return;
     recordingRef.current = null;
     setIsRecording(false);
+    const liveText = live.stop();
+    setLiveFinalSaved(liveText);
+
 
     rec.stream.getTracks().forEach((t) => t.stop());
     rec.node.disconnect();
