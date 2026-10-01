@@ -174,7 +174,10 @@ export function AudioTab() {
         return;
       }
       setAudioBlob(file);
+      setLiveFinalSaved("");
+      live.reset();
       toast.success(`Faýl ýüklendi: ${file.name}`);
+
     }
   };
 
