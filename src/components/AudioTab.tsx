@@ -5,8 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Mic, MicOff, Upload } from "lucide-react";
+import { Loader2, Mic, MicOff, Upload, AudioLines } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useLiveSpeech, liveSpeechSupported } from "@/hooks/useLiveSpeech";
+
 
 const LANGUAGES = [
   { value: "tk", label: "Türkmen dili" },
