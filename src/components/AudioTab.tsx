@@ -295,6 +295,36 @@ export function AudioTab() {
           />
         </div>
 
+        {(isRecording || live.finalText || live.interimText || liveFinalSaved) && (
+          <div className="mt-4 rounded-xl border border-border/60 bg-muted/40 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <AudioLines className={`h-4 w-4 text-primary ${live.isActive ? "animate-pulse" : ""}`} />
+              <span className="text-sm font-heading font-medium text-foreground">Janly ýazgy</span>
+              {isRecording && (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <span className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
+                  gepläň...
+                </span>
+              )}
+            </div>
+            <p className="text-foreground leading-relaxed min-h-[1.5rem]">
+              {live.finalText || liveFinalSaved}
+              {live.interimText && (
+                <span className="text-muted-foreground italic"> {live.interimText}</span>
+              )}
+              {!live.finalText && !liveFinalSaved && !live.interimText && (
+                <span className="text-muted-foreground text-sm">Sözleriňiz şu ýerde derrew peýda bolar...</span>
+              )}
+            </p>
+            {isRecording && !liveSupported && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Bu brauzer janly ýazgyny goldamaýar — ýazgy tamamlanandan soň doly tekst görkeziler.
+              </p>
+            )}
+          </div>
+        )}
+
+
         {audioBlob && !isRecording && (
           <div className="mt-4 space-y-3">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
