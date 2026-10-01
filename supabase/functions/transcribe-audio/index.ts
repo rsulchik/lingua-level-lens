@@ -37,7 +37,7 @@ serve(async (req) => {
   }
 
   try {
-    const { audioBase64, mimeType, language } = await req.json();
+    const { audioBase64, mimeType, language, liveTranscript } = await req.json();
 
     if (!audioBase64) {
       return new Response(
