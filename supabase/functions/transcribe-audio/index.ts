@@ -102,12 +102,14 @@ serve(async (req) => {
     }
 
     const sttData = await sttRes.json();
-    const transcription: string = (sttData.text ?? "").trim();
+    const live = typeof liveTranscript === "string" ? liveTranscript.trim().slice(0, 4000) : "";
+    // STT model sometimes returns empty text for Turkmen; fall back to the live browser transcript.
+    const transcription: string = (sttData.text ?? "").trim() || live;
 
     if (!transcription) {
       return new Response(
         JSON.stringify({ error: "Ses ýazgysynda söz tapylmady. Has ýokary sesde gepläp synanyşyň." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
