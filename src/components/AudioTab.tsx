@@ -18,6 +18,7 @@ const LANGUAGES = [
 
 interface AudioResult {
   transcription: string;
+  rawTranscription?: string;
   detectedLanguage: string;
   isTurkmen: boolean;
   isEnglish: boolean;
@@ -315,6 +316,11 @@ function AudioResultDisplay({ result, levelColors }: { result: AudioResult; leve
         <p className="text-foreground leading-relaxed bg-muted p-4 rounded-lg">
           {result.transcription}
         </p>
+        {result.rawTranscription && result.rawTranscription !== result.transcription && (
+          <p className="text-xs text-muted-foreground mt-2">
+            Asyl tanalan tekst: <span className="italic">{result.rawTranscription}</span>
+          </p>
+        )}
         <div className="flex gap-2 mt-3">
           <Badge variant="secondary">{result.detectedLanguage}</Badge>
           {result.isTurkmen && <Badge className="bg-primary text-primary-foreground">Türkmen dili</Badge>}
