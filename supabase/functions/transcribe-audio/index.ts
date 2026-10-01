@@ -114,7 +114,9 @@ serve(async (req) => {
     // ---- Step 2: language + proficiency analysis on the transcript ----
     const systemPrompt = `You are an expert linguist specializing in the Turkmen language (Türkmen dili) and CEFR assessment.
 
-You receive a transcript of spoken audio. Tasks:
+You receive a raw machine transcript of spoken audio. Speech recognition is weak for Turkmen: it often outputs Turkish, Azerbaijani, Uzbek or Russian-like spellings, or mishears words.
+Task 0: If the speech is Turkmen (or the user selected Turkmen), rewrite the transcript into correct modern Turkmen Latin orthography (letters ä, ç, ň, ö, ş, ü, ý, ž; e.g. Turkish "ben" -> "men", "değil" -> "däl", "var" -> "bar", "ş/ç" kept, "ı" -> "y", "ğ" -> "g"). Keep meaning and word order; do not add content. Put it in "correctedTranscription". For other languages, return the transcript with only obvious recognition fixes.
+Then:
 1. Detect the spoken language.
 2. If Turkmen: assess proficiency — vocabulary range, grammar (söz düzümi, hal goşulmalary, işlik çekimleri), fluency, register. Level: Başlangyç / Orta / Ösen / Ussatlyk.
 3. If English: assign a CEFR level A1–C2.
@@ -122,6 +124,7 @@ You receive a transcript of spoken audio. Tasks:
 
 Respond with ONLY a valid JSON object (no markdown, no code fences):
 {
+  "correctedTranscription": "cleaned transcript",
   "detectedLanguage": "language name in Turkmen (Türkmen, Iňlis, Rus, ...)",
   "isTurkmen": boolean,
   "isEnglish": boolean,
@@ -135,18 +138,17 @@ Respond with ONLY a valid JSON object (no markdown, no code fences):
   "suggestions": ["teklip 1", "teklip 2", "teklip 3"]
 }`;
 
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const hint = language === "tk" ? "The user stated the recording is in Turkmen." : "";
+    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3.8-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `Transcript:\n"""${transcription}"""` },
-        ],
+        model: "openai/gpt-6-astra",
+        instructions: systemPrompt,
+        input: `${hint}\nTranscript:\n"""${transcription}"""`,
       }),
     });
 
@@ -171,7 +173,9 @@ Respond with ONLY a valid JSON object (no markdown, no code fences):
     }
 
     const aiData = await aiRes.json();
-    let cleaned = (aiData.choices?.[0]?.message?.content ?? "").trim();
+    const outText: string = aiData.output_text ??
+      (aiData.output ?? []).flatMap((o: any) => o.content ?? []).map((c: any) => c.text ?? "").join("");
+    let cleaned = (outText ?? "").trim();
     if (cleaned.startsWith("```")) {
       cleaned = cleaned.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
     }
@@ -193,7 +197,11 @@ Respond with ONLY a valid JSON object (no markdown, no code fences):
     }
 
     return new Response(
-      JSON.stringify({ ...analysis, transcription }),
+      JSON.stringify({
+        ...analysis,
+        rawTranscription: transcription,
+        transcription: (typeof analysis.correctedTranscription === "string" && analysis.correctedTranscription.trim()) || transcription,
+      }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
