@@ -95,6 +95,10 @@ export function AudioTab() {
   const [result, setResult] = useState<AudioResult | null>(null);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [language, setLanguage] = useState("tk");
+  const [liveSupported] = useState(() => liveSpeechSupported());
+  const [liveFinalSaved, setLiveFinalSaved] = useState("");
+  const live = useLiveSpeech();
+
   const recordingRef = useRef<{
     stream: MediaStream;
     ctx: AudioContext;
