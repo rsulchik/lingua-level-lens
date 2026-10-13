@@ -148,7 +148,7 @@ Respond with ONLY a valid JSON object (no markdown, no code fences):
       body: JSON.stringify({
         model: "openai/gpt-6-astra",
         instructions: systemPrompt,
-        input: `${hint}${liveHint}\nTranscript:\n"""${transcription}"""`,
+        input: `${hint}\nTranscript:\n"""${transcription}"""`,
       }),
     });
 
