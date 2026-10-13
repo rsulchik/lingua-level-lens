@@ -5,9 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Mic, MicOff, Upload, AudioLines } from "lucide-react";
+import { Loader2, Mic, MicOff, Upload } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useLiveSpeech, liveSpeechSupported } from "@/hooks/useLiveSpeech";
 
 
 const LANGUAGES = [
@@ -95,9 +94,6 @@ export function AudioTab() {
   const [result, setResult] = useState<AudioResult | null>(null);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [language, setLanguage] = useState("tk");
-  const [liveSupported] = useState(() => liveSpeechSupported());
-  const [liveFinalSaved, setLiveFinalSaved] = useState("");
-  const live = useLiveSpeech();
 
   const recordingRef = useRef<{
     stream: MediaStream;
@@ -131,9 +127,6 @@ export function AudioTab() {
       recordingRef.current = { stream, ctx, source, node, pcm };
       setAudioBlob(null);
       setResult(null);
-      setLiveFinalSaved("");
-      live.reset();
-      if (liveSupported) live.start(language);
       setIsRecording(true);
       toast.info("Ýazgy başlandy...");
 
@@ -147,9 +140,6 @@ export function AudioTab() {
     if (!rec) return;
     recordingRef.current = null;
     setIsRecording(false);
-    const liveText = live.stop();
-    setLiveFinalSaved(liveText);
-
 
     rec.stream.getTracks().forEach((t) => t.stop());
     rec.node.disconnect();
@@ -174,10 +164,7 @@ export function AudioTab() {
         return;
       }
       setAudioBlob(file);
-      setLiveFinalSaved("");
-      live.reset();
       toast.success(`Faýl ýüklendi: ${file.name}`);
-
     }
   };
 
@@ -207,8 +194,6 @@ export function AudioTab() {
           audioBase64: base64,
           mimeType: audioBlob.type || "audio/webm",
           language: language === "auto" ? undefined : language,
-          liveTranscript: liveFinalSaved || undefined,
-
         },
       });
 
@@ -294,36 +279,6 @@ export function AudioTab() {
             onChange={handleFileUpload}
           />
         </div>
-
-        {(isRecording || live.finalText || live.interimText || liveFinalSaved) && (
-          <div className="mt-4 rounded-xl border border-border/60 bg-muted/40 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <AudioLines className={`h-4 w-4 text-primary ${live.isActive ? "animate-pulse" : ""}`} />
-              <span className="text-sm font-heading font-medium text-foreground">Janly ýazgy</span>
-              {isRecording && (
-                <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <span className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
-                  gepläň...
-                </span>
-              )}
-            </div>
-            <p className="text-foreground leading-relaxed min-h-[1.5rem]">
-              {live.finalText || liveFinalSaved}
-              {live.interimText && (
-                <span className="text-muted-foreground italic"> {live.interimText}</span>
-              )}
-              {!live.finalText && !liveFinalSaved && !live.interimText && (
-                <span className="text-muted-foreground text-sm">Sözleriňiz şu ýerde derrew peýda bolar...</span>
-              )}
-            </p>
-            {isRecording && !liveSupported && (
-              <p className="text-xs text-muted-foreground mt-2">
-                Bu brauzer janly ýazgyny goldamaýar — ýazgy tamamlanandan soň doly tekst görkeziler.
-              </p>
-            )}
-          </div>
-        )}
-
 
         {audioBlob && !isRecording && (
           <div className="mt-4 space-y-3">

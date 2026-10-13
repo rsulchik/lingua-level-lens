@@ -37,7 +37,7 @@ serve(async (req) => {
   }
 
   try {
-    const { audioBase64, mimeType, language, liveTranscript } = await req.json();
+    const { audioBase64, mimeType, language } = await req.json();
 
     if (!audioBase64) {
       return new Response(
@@ -102,9 +102,7 @@ serve(async (req) => {
     }
 
     const sttData = await sttRes.json();
-    const live = typeof liveTranscript === "string" ? liveTranscript.trim().slice(0, 4000) : "";
-    // STT model sometimes returns empty text for Turkmen; fall back to the live browser transcript.
-    const transcription: string = (sttData.text ?? "").trim() || live;
+    const transcription: string = (sttData.text ?? "").trim();
 
     if (!transcription) {
       return new Response(
@@ -141,10 +139,6 @@ Respond with ONLY a valid JSON object (no markdown, no code fences):
 }`;
 
     const hint = language === "tk" ? "The user stated the recording is in Turkmen." : "";
-    const liveHint =
-      typeof liveTranscript === "string" && liveTranscript.trim()
-        ? `\nThe browser's live speech recognition produced this parallel transcript (may use Turkish spelling); use it to resolve unclear words:\n"""${liveTranscript.trim().slice(0, 4000)}"""`
-        : "";
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
       method: "POST",
       headers: {
@@ -154,7 +148,7 @@ Respond with ONLY a valid JSON object (no markdown, no code fences):
       body: JSON.stringify({
         model: "openai/gpt-6-astra",
         instructions: systemPrompt,
-        input: `${hint}${liveHint}\nTranscript:\n"""${transcription}"""`,
+        input: `${hint}\nTranscript:\n"""${transcription}"""`,
       }),
     });
 
