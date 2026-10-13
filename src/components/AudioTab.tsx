@@ -352,6 +352,26 @@ function AudioResultDisplay({ result, levelColors }: { result: AudioResult; leve
             Asyl tanalan tekst: <span className="italic">{result.rawTranscription}</span>
           </p>
         )}
+        {result.dictChecked && (
+          <div className="mt-3 text-sm rounded-lg border border-border/50 p-3 space-y-2">
+            <p className="font-medium text-foreground">
+              📖 Sözlük barlagy:{" "}
+              {result.dictUnknown && result.dictUnknown.length > 0
+                ? `${result.dictUnknown.length} näbelli söz tapyldy`
+                : "ähli sözler sözlükde bar"}
+            </p>
+            {result.dictFixes && result.dictFixes.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {result.dictFixes.map((f, i) => (
+                  <Badge key={i} variant="outline" className="font-normal">
+                    <span className="line-through text-destructive mr-1">{f.original}</span>→
+                    <span className="ml-1 text-primary">{f.corrected}</span>
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         <div className="flex gap-2 mt-3">
           <Badge variant="secondary">{result.detectedLanguage}</Badge>
           {result.isTurkmen && <Badge className="bg-primary text-primary-foreground">Türkmen dili</Badge>}
