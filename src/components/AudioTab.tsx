@@ -5,9 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Mic, MicOff, Upload, AudioLines } from "lucide-react";
+import { Loader2, Mic, MicOff, Upload } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useLiveSpeech, liveSpeechSupported } from "@/hooks/useLiveSpeech";
 
 
 const LANGUAGES = [
@@ -95,9 +94,6 @@ export function AudioTab() {
   const [result, setResult] = useState<AudioResult | null>(null);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [language, setLanguage] = useState("tk");
-  const [liveSupported] = useState(() => liveSpeechSupported());
-  const [liveFinalSaved, setLiveFinalSaved] = useState("");
-  const live = useLiveSpeech();
 
   const recordingRef = useRef<{
     stream: MediaStream;
@@ -147,9 +143,6 @@ export function AudioTab() {
     if (!rec) return;
     recordingRef.current = null;
     setIsRecording(false);
-    const liveText = live.stop();
-    setLiveFinalSaved(liveText);
-
 
     rec.stream.getTracks().forEach((t) => t.stop());
     rec.node.disconnect();
@@ -174,10 +167,7 @@ export function AudioTab() {
         return;
       }
       setAudioBlob(file);
-      setLiveFinalSaved("");
-      live.reset();
       toast.success(`Faýl ýüklendi: ${file.name}`);
-
     }
   };
 
@@ -207,8 +197,6 @@ export function AudioTab() {
           audioBase64: base64,
           mimeType: audioBlob.type || "audio/webm",
           language: language === "auto" ? undefined : language,
-          liveTranscript: liveFinalSaved || undefined,
-
         },
       });
 
