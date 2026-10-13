@@ -102,9 +102,7 @@ serve(async (req) => {
     }
 
     const sttData = await sttRes.json();
-    const live = typeof liveTranscript === "string" ? liveTranscript.trim().slice(0, 4000) : "";
-    // STT model sometimes returns empty text for Turkmen; fall back to the live browser transcript.
-    const transcription: string = (sttData.text ?? "").trim() || live;
+    const transcription: string = (sttData.text ?? "").trim();
 
     if (!transcription) {
       return new Response(
