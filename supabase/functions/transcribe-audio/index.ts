@@ -139,10 +139,6 @@ Respond with ONLY a valid JSON object (no markdown, no code fences):
 }`;
 
     const hint = language === "tk" ? "The user stated the recording is in Turkmen." : "";
-    const liveHint =
-      typeof liveTranscript === "string" && liveTranscript.trim()
-        ? `\nThe browser's live speech recognition produced this parallel transcript (may use Turkish spelling); use it to resolve unclear words:\n"""${liveTranscript.trim().slice(0, 4000)}"""`
-        : "";
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
       method: "POST",
       headers: {
