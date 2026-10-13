@@ -115,7 +115,16 @@ serve(async (req) => {
     const systemPrompt = `You are an expert linguist specializing in the Turkmen language (Türkmen dili) and CEFR assessment.
 
 You receive a raw machine transcript of spoken audio. Speech recognition is weak for Turkmen: it often outputs Turkish, Azerbaijani, Uzbek or Russian-like spellings, or mishears words.
-Task 0: If the speech is Turkmen (or the user selected Turkmen), rewrite the transcript into correct modern Turkmen Latin orthography (letters ä, ç, ň, ö, ş, ü, ý, ž; e.g. Turkish "ben" -> "men", "değil" -> "däl", "var" -> "bar", "ş/ç" kept, "ı" -> "y", "ğ" -> "g"). Keep meaning and word order; do not add content. Put it in "correctedTranscription". For other languages, return the transcript with only obvious recognition fixes.
+Task 0: If the speech is Turkmen (or the user selected Turkmen), rewrite the transcript into correct modern Turkmen Latin orthography (letters ä, ç, ň, ö, ş, ü, ý, ž). Keep meaning and word order; do not add content. Put it in "correctedTranscription". For other languages, return the transcript with only obvious recognition fixes.
+
+Typical STT errors for Turkmen (Turkish/Azerbaijani leakage) — fix them:
+- Pronouns: ben→men, sen→sen, o→ol, biz→biz, onlar→olar, bana→maňa, sana→saňa, benim→meniň, senin→seniň, onun→onuň, bunu→muny, şunu→şuny
+- Common words: değil→däl, var→bar, yok→ýok, evet→hawa, hayır→ýok, çok→köp/örän, güzel→gowy/owadan, okul→mekdep, ev→öý, su→suw, gün→gün, bugün→şu gün, yarın→ertir, dün→düýn, şimdi→häzir, ne→näme, nasıl→nähili, nerede→nirede, neden/niye→näme üçin, ama→emma, ile→bilen, için→üçin, gibi→ýaly, kadar→çenli, sonra→soň, önce→öň, büyük→uly, küçük→kiçi, iyi→gowy, kötü→erbet, zaman→wagt, kitap→kitap, arkadaş→dost/ýoldaş, anne→eje, baba→kaka, kardeş→dogan, teşekkür ederim→sag boluň, merhaba→salam
+- Verbs: gidiyorum→gidýärin/barýaryn, geliyorum→gelýärin, yapıyorum→edýärin, istiyorum→isleýärin, biliyorum→bilýärin, -yor-→-ýar/-ýär, -acak/-ecek→-jak/-jek, -mış→-ypdyr/-ipdir, -dı/-di→-dy/-di, olmak→bolmak, vermek→bermek, yapmak→etmek, söylemek→aýtmak, konuşmak→gürlemek
+- Letters: ı→y, ğ→g (or drop), y- at word start often → ý (yol→ýol, yaz→ýaz, yer→ýer), c→j (cevap→jogap, can→jan), initial v→w (var→bar, ver→ber, vatan→watan), w for Russian/Arabic v (Ashgabat→Aşgabat), nasal n before g/k → ň (şunuň, meniň), long ä (gelýär, edýär), ö/ü kept
+- Case endings: genitive -ın/-in→-yň/-iň, dative -a/-e kept or -a/-e after consonant, -ya/-ye → -a/-e, accusative -ı/-i→-y/-i, locative -da/-de kept, ablative -dan/-den kept
+- Russian loanwords keep Turkmen spelling: kompýuter, internet, telefon, uniwersitet, institut
+Every corrected word must be a real Turkmen word form.
 Then:
 1. Detect the spoken language.
 2. If Turkmen: assess proficiency — vocabulary range, grammar (söz düzümi, hal goşulmalary, işlik çekimleri), fluency, register. Level: Başlangyç / Orta / Ösen / Ussatlyk.

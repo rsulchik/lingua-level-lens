@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Mic, MicOff, Upload } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { checkSpelling } from "@/lib/turkmen-dictionary";
 
 
 const LANGUAGES = [
@@ -31,6 +32,9 @@ interface AudioResult {
   vocabularyNotes?: string;
   pronunciationNotes?: string;
   suggestions: string[];
+  dictChecked?: boolean;
+  dictUnknown?: string[];
+  dictFixes?: { original: string; corrected: string }[];
 }
 
 const TARGET_RATE = 16000;
@@ -199,6 +203,29 @@ export function AudioTab() {
 
       if (error) throw error;
       if (data.error) throw new Error(data.error);
+
+      // Dictionary check (Hunspell) on Turkmen transcripts
+      if (data.isTurkmen && data.transcription) {
+        try {
+          const { misspelled } = await checkSpelling(data.transcription);
+          data.dictUnknown = misspelled;
+          if (misspelled.length > 0) {
+            const { data: sp } = await supabase.functions.invoke("check-spelling", {
+              body: { text: data.transcription, misspelledWords: misspelled },
+            });
+            if (sp && !sp.error && typeof sp.correctedText === "string" && sp.correctedText.trim()) {
+              data.dictFixes = (sp.errors ?? []).filter((e: any) => e?.original && e?.corrected && e.original !== e.corrected);
+              if (sp.correctedText.trim() !== data.transcription) {
+                data.rawTranscription = data.rawTranscription ?? data.transcription;
+                data.transcription = sp.correctedText.trim();
+              }
+            }
+          }
+          data.dictChecked = true;
+        } catch (e) {
+          console.error("dictionary check failed", e);
+        }
+      }
 
       setResult(data);
       toast.success("Ses seljermesi tamamlandy!");
