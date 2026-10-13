@@ -127,9 +127,6 @@ export function AudioTab() {
       recordingRef.current = { stream, ctx, source, node, pcm };
       setAudioBlob(null);
       setResult(null);
-      setLiveFinalSaved("");
-      live.reset();
-      if (liveSupported) live.start(language);
       setIsRecording(true);
       toast.info("Ýazgy başlandy...");
 
